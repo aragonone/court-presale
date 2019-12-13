@@ -45,7 +45,7 @@
     "/test"
   ],
   "dependencies": {
-    "@ablack/fundraising-aragon-fundraising": "^1.0.0",
+    "@ablack/fundraising-aragon-fundraising": "^1.0.1",
     "@ablack/fundraising-bancor-formula": "^1.0.0",
     "@ablack/fundraising-batched-bancor-market-maker": "^1.0.0",
     "@ablack/fundraising-tap": "^1.0.0",
