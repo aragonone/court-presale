@@ -19,11 +19,13 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
     /**
     Hardcoded constants to save gas
-    bytes32 public constant OPEN_ROLE       = keccak256("OPEN_ROLE");
-    bytes32 public constant CONTRIBUTE_ROLE = keccak256("CONTRIBUTE_ROLE");
+    bytes32 public constant OPEN_ROLE                   = keccak256("OPEN_ROLE");
+    bytes32 public constant REDUCE_BENEFICIARY_PCT_ROLE = keccak256("REDUCE_BENEFICIARY_PCT_ROLE");
+    bytes32 public constant CONTRIBUTE_ROLE             = keccak256("CONTRIBUTE_ROLE");
     */
-    bytes32 public constant OPEN_ROLE       = 0xefa06053e2ca99a43c97c4a4f3d8a394ee3323a8ff237e625fba09fe30ceb0a4;
-    bytes32 public constant CONTRIBUTE_ROLE = 0x9ccaca4edf2127f20c425fdd86af1ba178b9e5bee280cd70d88ac5f6874c4f07;
+    bytes32 public constant OPEN_ROLE                   = 0xefa06053e2ca99a43c97c4a4f3d8a394ee3323a8ff237e625fba09fe30ceb0a4;
+    bytes32 public constant REDUCE_BENEFICIARY_PCT_ROLE = 0x2738f3f227143b7fbb9720e93e2e5b36d7a15966e130b49f1582c6432d949aa9;
+    bytes32 public constant CONTRIBUTE_ROLE             = 0x9ccaca4edf2127f20c425fdd86af1ba178b9e5bee280cd70d88ac5f6874c4f07;
 
     uint256 public constant PPM = 1000000; // 0% = 0 * 10 ** 4; 1% = 1 * 10 ** 4; 100% = 100 * 10 ** 4
 
@@ -58,15 +60,17 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     uint64                                        public   period;
     uint256                                       public   exchangeRate;
     uint256                                       public   futureReserveRatio;
+    uint256                                       public   mintingForBeneficiaryPct;
     uint64                                        public   openDate;
 
     bool                                          public   isClosed;
     uint256                                       public   totalRaised;
+    uint256                                       public   totalSold;
 
-    event SetOpenDate (uint64 date);
-    event Close       ();
-    event Contribute  (address indexed contributor, uint256 value, uint256 amount);
-
+    event SetOpenDate          (uint64 date);
+    event ReduceBeneficiatyPct (uint256 pct);
+    event Close                ();
+    event Contribute           (address indexed contributor, uint256 value, uint256 amount);
 
     /***** external function *****/
 
@@ -91,6 +95,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         uint64                       _period,
         uint256                      _exchangeRate,
         uint256                      _futureReserveRatio,
+        uint256                      _mintingForBeneficiaryPct,
         uint64                       _openDate
     )
         external
@@ -103,6 +108,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         require(isContract(_erc20ContribToken),                                     ERROR_INVALID_CONTRIBUTE_TOKEN);
         require(_exchangeRate > 0,                                                  ERROR_INVALID_EXCHANGE_RATE);
         require(_futureReserveRatio > 0 && _futureReserveRatio <= PPM, ERROR_INVALID_PCT);
+        require(_mintingForBeneficiaryPct <= PPM, ERROR_INVALID_PCT);
 
         initialized();
 
@@ -113,6 +119,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         erc20ContribToken = _erc20ContribToken;
         exchangeRate = _exchangeRate;
         futureReserveRatio = _futureReserveRatio;
+        mintingForBeneficiaryPct = _mintingForBeneficiaryPct;
 
         _setPeriod(_period);
 
@@ -135,6 +142,18 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     */
     function setPeriod(uint64 _period) external auth(OPEN_ROLE) {
         _setPeriod(_period);
+    }
+
+    /**
+     * @notice Reduce pre-minting for beneficiary percentage to `_pct`
+     * @param _pct New percentage to be set
+    */
+    function reduceBeneficiaryPct(uint64 _pct) external auth(REDUCE_BENEFICIARY_PCT_ROLE) {
+        require(_pct < mintingForBeneficiaryPct, ERROR_INVALID_PCT);
+
+        mintingForBeneficiaryPct = _pct;
+
+        emit ReduceBeneficiatyPct(_pct);
     }
 
     /**
@@ -161,8 +180,9 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
         // (mint ✨) ~~~> project tokens ~~~> (contributor)
         uint256 tokensToSell = contributionToTokens(_value);
-        tokenManager.mint(_contributor, tokensToSell);
         totalRaised = totalRaised.add(_value);
+        totalSold = totalSold.add(tokensToSell);
+        tokenManager.mint(_contributor, tokensToSell);
 
         emit Contribute(_contributor, _value, tokensToSell);
     }
@@ -182,8 +202,15 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
         isClosed = true;
 
+        // mint new tokens for beneficiary
+        uint256 tokensToMint;
+        if (mintingForBeneficiaryPct > 0) {
+            tokensToMint = totalSold.mul(mintingForBeneficiaryPct) / PPM;
+            tokenManager.mint(beneficiary, tokensToMint);
+        }
+
         // (presale) ~~~> contribution tokens ~~~> (reserve)
-        uint256 tokensForReserve = totalRaised.mul(futureReserveRatio) / PPM;
+        uint256 tokensForReserve = (totalRaised.mul(PPM + mintingForBeneficiaryPct) / PPM).mul(futureReserveRatio) / PPM;
         _transfer(erc20ContribToken, address(this), reserve, tokensForReserve);
 
         // (presale) ~~~> contribution tokens ~~~> (beneficiary)

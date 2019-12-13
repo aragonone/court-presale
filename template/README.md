@@ -73,10 +73,11 @@ _Handle market maker funds_
 #### Presale
 _Handle preliminary sale_
 
-| App     | Permission | Grantee    | Manager          |
-| ------- | ---------- | ---------- | ---------------- |
-| Presale | OPEN       | Controller | Owner            |
-| Presale | CONTRIBUTE | Controller | Owner            |
+| App     | Permission             | Grantee    | Manager          |
+| ------- | ----------             | ---------- | ---------------- |
+| Presale | OPEN                   | Controller | Owner            |
+| Presale | REDUCE_BENEFICIARY_PCT | Owner      | Owner            |
+| Presale | CONTRIBUTE             | Controller | Owner            |
 
 
 #### MarketMaker

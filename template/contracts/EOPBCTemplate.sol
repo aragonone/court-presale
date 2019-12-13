@@ -47,8 +47,9 @@ contract EOPBCTemplate is BaseTemplate {
         ERC20         collateralToken;
         MiniMeToken   bondedToken;
         uint64        period;
-        uint256       exchangeRate;
         uint64        openDate;
+        uint256       exchangeRate;
+        uint256       mintingForBeneficiaryPct;
         uint256       reserveRatio;
         uint256       batchBlocks;
         uint256       slippage;
@@ -67,17 +68,21 @@ contract EOPBCTemplate is BaseTemplate {
 
     /***** external functions *****/
 
+    /*
+      uint256       _exchangeRate,
+      uint256       _mintingForBeneficiaryPct,
+      uint256       _reserveRatio,
+      uint256       _batchBlocks,
+      uint256       _slippage
+    */
     function newInstance(
         address       _owner,
         string        _id,
         ERC20         _collateralToken,
         MiniMeToken   _bondedToken,
         uint64        _period,
-        uint256       _exchangeRate,
         uint64        _openDate,
-        uint256       _reserveRatio,
-        uint256       _batchBlocks,
-        uint256       _slippage
+        uint256[5]    _paramsArray
     )
         external
     {
@@ -98,11 +103,8 @@ contract EOPBCTemplate is BaseTemplate {
             _collateralToken,
             _bondedToken,
             _period,
-            _exchangeRate,
             _openDate,
-            _reserveRatio,
-            _batchBlocks,
-            _slippage
+            _paramsArray
         );
         _initializePresale(fundraisingApps, fundraisingParams);
         _initializeMarketMaker(fundraisingApps, fundraisingParams.owner, fundraisingParams.batchBlocks);
@@ -147,6 +149,7 @@ contract EOPBCTemplate is BaseTemplate {
             _fundraisingParams.period,
             _fundraisingParams.exchangeRate,
             _fundraisingParams.reserveRatio,
+            _fundraisingParams.mintingForBeneficiaryPct,
             _fundraisingParams.openDate
         );
     }
@@ -222,6 +225,7 @@ contract EOPBCTemplate is BaseTemplate {
         _acl.createPermission(_fundraisingApps.marketMaker, _fundraisingApps.reserve, _fundraisingApps.reserve.TRANSFER_ROLE(), _owner);
         // presale
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.presale, _fundraisingApps.presale.OPEN_ROLE(), _owner);
+        _acl.createPermission(_owner, _fundraisingApps.presale, _fundraisingApps.presale.REDUCE_BENEFICIARY_PCT_ROLE(), _owner);
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.presale, _fundraisingApps.presale.CONTRIBUTE_ROLE(), _owner);
         // market maker
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.marketMaker, _fundraisingApps.marketMaker.OPEN_ROLE(), _owner);
@@ -268,33 +272,38 @@ contract EOPBCTemplate is BaseTemplate {
         fundraisingApps.bondedTokenManager = _tokenManager;
     }
 
+    /*
+      uint256       _exchangeRate,
+      uint256       _mintingForBeneficiaryPct,
+      uint256       _reserveRatio,
+      uint256       _batchBlocks,
+      uint256       _slippage
+    */
     function _packFundraisingParams(
         address       _owner,
         string        _id,
         ERC20         _collateralToken,
         MiniMeToken   _bondedToken,
         uint64        _period,
-        uint256       _exchangeRate,
         uint64        _openDate,
-        uint256       _reserveRatio,
-        uint256       _batchBlocks,
-        uint256       _slippage
+        uint256[5]    _paramsArray
     )
         internal
         pure
         returns (FundraisingParams memory fundraisingParams)
     {
         fundraisingParams = FundraisingParams({
-            owner:           _owner,
-            id:              _id,
-            collateralToken: _collateralToken,
-            bondedToken:     _bondedToken,
-            period:          _period,
-            exchangeRate:    _exchangeRate,
-            openDate:        _openDate,
-            reserveRatio:    _reserveRatio,
-            batchBlocks:     _batchBlocks,
-            slippage:        _slippage
+            owner:                    _owner,
+            id:                       _id,
+            collateralToken:          _collateralToken,
+            bondedToken:              _bondedToken,
+            period:                   _period,
+            openDate:                 _openDate,
+            exchangeRate:             _paramsArray[0],
+            mintingForBeneficiaryPct: _paramsArray[1],
+            reserveRatio:             _paramsArray[2],
+            batchBlocks:              _paramsArray[3],
+            slippage:                 _paramsArray[4]
         });
     }
 

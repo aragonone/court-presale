@@ -31,6 +31,8 @@ const {
   BATCH_BLOCKS,
 } = require('@ablack/fundraising-shared-test-helpers/constants')
 
+const BENEFICIARY_PCT = 200000
+
 const ANY_ADDRESS = { address: require('@ablack/fundraising-shared-test-helpers/constants').ANY_ADDRESS }
 
 const START_DATE = new Date().getTime() + MONTHS
@@ -72,11 +74,14 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
             collateralToken.address,
             bondedToken.address,
             PRESALE_PERIOD,
-            PRESALE_EXCHANGE_RATE,
             START_DATE,
-            RESERVE_RATIOS[0],
-            BATCH_BLOCKS,
-            SLIPPAGES[0],
+            [
+              PRESALE_EXCHANGE_RATE,
+              BENEFICIARY_PCT,
+              RESERVE_RATIOS[0],
+              BATCH_BLOCKS,
+              SLIPPAGES[0]
+            ],
             {
               from: owner,
             }
@@ -94,11 +99,14 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
             owner,
             bondedToken.address,
             PRESALE_PERIOD,
-            PRESALE_EXCHANGE_RATE,
             START_DATE,
-            RESERVE_RATIOS[0],
-            BATCH_BLOCKS,
-            SLIPPAGES[0],
+            [
+              PRESALE_EXCHANGE_RATE,
+              BENEFICIARY_PCT,
+              RESERVE_RATIOS[0],
+              BATCH_BLOCKS,
+              SLIPPAGES[0]
+            ],
             {
               from: owner,
             }
@@ -116,11 +124,14 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
             collateralToken.address,
             owner,
             PRESALE_PERIOD,
-            PRESALE_EXCHANGE_RATE,
             START_DATE,
-            RESERVE_RATIOS[0],
-            BATCH_BLOCKS,
-            SLIPPAGES[0],
+            [
+              PRESALE_EXCHANGE_RATE,
+              BENEFICIARY_PCT,
+              RESERVE_RATIOS[0],
+              BATCH_BLOCKS,
+              SLIPPAGES[0]
+            ],
             {
               from: owner,
             }
@@ -138,11 +149,14 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
             collateralToken.address,
             bondedToken.address,
             PRESALE_PERIOD,
-            PRESALE_EXCHANGE_RATE,
             START_DATE,
-            RESERVE_RATIOS[0],
-            BATCH_BLOCKS,
-            SLIPPAGES[0],
+            [
+              PRESALE_EXCHANGE_RATE,
+              BENEFICIARY_PCT,
+              RESERVE_RATIOS[0],
+              BATCH_BLOCKS,
+              SLIPPAGES[0]
+            ],
             {
               from: owner,
             }
@@ -319,11 +333,14 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
           collateralToken.address,
           bondedToken.address,
           PRESALE_PERIOD,
-          PRESALE_EXCHANGE_RATE,
           START_DATE,
-          RESERVE_RATIOS[0],
-          BATCH_BLOCKS,
-          SLIPPAGES[0],
+          [
+            PRESALE_EXCHANGE_RATE,
+            BENEFICIARY_PCT,
+            RESERVE_RATIOS[0],
+            BATCH_BLOCKS,
+            SLIPPAGES[0]
+          ],
           {
             from: owner,
           }
@@ -337,7 +354,7 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
       const FINANCE_PERIOD = 60 * 60 * 24 * 15 // 15 days
 
       createDAO(FINANCE_PERIOD)
-      itCostsUpTo(7e6)
+      itCostsUpTo(7.1e6)
       itSetupsDAOCorrectly(FINANCE_PERIOD)
     })
 
@@ -345,7 +362,7 @@ contract('externally owned presale bonding curve', ([root, owner, member1, membe
       const FINANCE_PERIOD = 0 // use default
 
       createDAO(FINANCE_PERIOD)
-      itCostsUpTo(7e6)
+      itCostsUpTo(7.1e6)
       itSetupsDAOCorrectly(FINANCE_PERIOD)
     })
   })

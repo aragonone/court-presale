@@ -117,6 +117,7 @@ const deploy = {
     const receipt = await test.dao.newAppInstance(hash('presale.aragonpm.eth'), appBase.address, '0x', false, { from: appManager })
     test.presale = Presale.at(deploy.getProxyAddress(receipt))
     test.PRESALE_OPEN_ROLE = await appBase.OPEN_ROLE()
+    test.PRESALE_REDUCE_BENEFICIARY_PCT_ROLE = await appBase.REDUCE_BENEFICIARY_PCT_ROLE()
     test.PRESALE_CONTRIBUTE_ROLE = await appBase.CONTRIBUTE_ROLE()
   },
   setPresalePermissions: async (test, appManager) => {
@@ -133,6 +134,7 @@ const deploy = {
       params.presalePeriod,
       params.presaleExchangeRate,
       params.futureReserveRatio,
+      params.mintingForBeneficiaryPct,
       params.startDate,
     ]
     return test.presale.initialize(...paramsArr)
@@ -147,6 +149,7 @@ const deploy = {
       presalePeriod: PRESALE_PERIOD,
       presaleExchangeRate: PRESALE_EXCHANGE_RATE,
       futureReserveRatio: RESERVE_RATIOS[0],
+      mintingForBeneficiaryPct: 0,
       startDate: 0,
     }
   },
@@ -156,6 +159,10 @@ const deploy = {
     test.contributionToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DaiToken', 18, 'DAI', true)
     test.projectToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'ProjectToken', 18, 'PRO', true)
     test.ant = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'AntToken', 18, 'ANT', true)
+  },
+
+  setReduceBeneficiaryPctRole: async (test, appManager) => {
+    await test.acl.createPermission(appManager, test.presale.address, test.PRESALE_REDUCE_BENEFICIARY_PCT_ROLE, appManager, { from: appManager })
   },
 
   /* ~EVERYTHING~ */
@@ -184,6 +191,7 @@ const deploy = {
   },
   deployDefaultSetup: async (test, appManager) => {
     await deploy.prepareDefaultSetup(test, appManager)
+    await deploy.setReduceBeneficiaryPctRole(test, appManager)
     return await deploy.initializePresale(test, deploy.defaultDeployParams(test, appManager))
   },
 }

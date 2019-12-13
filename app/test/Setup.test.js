@@ -4,7 +4,7 @@ const {
   RESERVE_RATIOS,
   ZERO_ADDRESS,
 } = require('@ablack/fundraising-shared-test-helpers/constants')
-const { PRESALE_STATE, prepareDefaultSetup, initializePresale, defaultDeployParams } = require('./common/deploy')
+const { PRESALE_STATE, prepareDefaultSetup, setReduceBeneficiaryPctRole, initializePresale, defaultDeployParams } = require('./common/deploy')
 const { tokenExchangeRate, now } = require('@ablack/fundraising-presale/test/common/utils')
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 
@@ -14,6 +14,7 @@ const ERROR_INVALID_STATE = 'PRESALE_INVALID_STATE'
 const ERROR_INVALID_OPEN_DATE = 'PRESALE_INVALID_OPEN_DATE'
 const ERROR_TIME_PERIOD_ZERO = 'PRESALE_TIME_PERIOD_ZERO'
 const ERROR_INVALID_TIME_PERIOD = 'PRESALE_INVALID_TIME_PERIOD'
+const ERROR_INVALID_PCT = 'PRESALE_INVALID_PCT'
 
 contract('Balance Redirect Presale, setup', ([anyone, appManager, someEOA]) => {
   describe('When deploying the app with valid parameters', () => {
@@ -148,6 +149,37 @@ contract('Balance Redirect Presale, setup', ([anyone, appManager, someEOA]) => {
 
     describe('When a startDate is specified upon initialization', () => {
       itChangesTimeParamsCorrectly(now() + 3600)
+    })
+  })
+
+  describe('When changing beneficiary pct', () => {
+    const itChangesBeneficiaryPctCorrectly = mintingForBeneficiaryPct => {
+      beforeEach(async () => {
+        await prepareDefaultSetup(this, appManager)
+        await setReduceBeneficiaryPctRole(this, appManager)
+        await initializePresale(this, { ...defaultDeployParams(this, appManager), mintingForBeneficiaryPct })
+      })
+
+      if (mintingForBeneficiaryPct > 0) {
+        it('Allows to change beneficiary pct', async () => {
+          await this.presale.reduceBeneficiaryPct(mintingForBeneficiaryPct - 1, { from: appManager })
+        })
+      }
+
+      it('Fails to change beneficiary pct if bigger than previous one', async () => {
+        await assertRevert(this.presale.reduceBeneficiaryPct(
+          mintingForBeneficiaryPct > 0 ? mintingForBeneficiaryPct + 1 : mintingForBeneficiaryPct,
+          { from: appManager }
+        ), ERROR_INVALID_PCT)
+      })
+    }
+
+    describe('When beneficary pct is 0 upon initialization', () => {
+      itChangesBeneficiaryPctCorrectly(0)
+    })
+
+    describe('When a beneficiary pct is not 0 upon initialization', () => {
+      itChangesBeneficiaryPctCorrectly(200000)
     })
   })
 

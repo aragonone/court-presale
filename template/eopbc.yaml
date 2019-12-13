@@ -59,6 +59,10 @@ permissions:
   grantee: controller
   manager: owner
 - app: presale
+  role: REDUCE_BENEFICIARY_PCT_ROLE
+  grantee: owner
+  manager: owner
+- app: presale
   role: CONTRIBUTE_ROLE
   grantee: controller
   manager: owner
