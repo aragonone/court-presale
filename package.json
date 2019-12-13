@@ -1,0 +1,20 @@
+{
+  "name": "@aragon/monorepo-court-presale",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for Court presale, app and template",
+  "author": "Aragon Association <legal@aragon.org>",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "install": "npm run bootstrap",
+    "bootstrap": "lerna bootstrap",
+    "lint": "lerna run --scope=@aragon/* lint",
+    "test": "npm run test:all",
+    "test:all": "lerna run --scope=@aragon/* --concurrency=1 --stream test",
+    "test:app": "lerna run --scope=@aragon/court-presale --stream test",
+    "test:template": "lerna run --scope=@aragon/templates-externally-owned-presale-bonding-curve --stream test"
+  },
+  "devDependencies": {
+    "lerna": "^3.0.0"
+  }
+}

@@ -1,0 +1,73 @@
+@startuml eopbc
+' -- options --
+allowmixing
+skinparam handwritten true
+' -- tokens --
+
+package anj {
+    class MiniMeToken
+    note right
+    	**symbol** ANJ
+	**name** Aragon Network Juror token
+	**decimals** 18
+    end note
+}
+' -- apps --
+
+class controller {
+    {abstract}controller
+
+    
+}
+
+
+class reserve {
+    {abstract}agent
+
+    
+}
+
+
+class market_maker {
+    {abstract}market-maker
+
+    
+}
+
+
+class presale {
+    {abstract}presale
+
+    
+}
+
+
+class tap {
+    {abstract}tap
+
+    
+}
+
+
+class anj_token_manager {
+    {abstract}token-manager
+
+    	**token** anj
+}
+
+anj_token_manager <|-- anj
+' -- permissions --
+owner ...> kernel: **kernel.APP_MANAGER_ROLE** (mgt by owner)
+owner ...> acl: **acl.CREATE_PERMISSIONS_ROLE** (mgt by owner)
+market_maker ...> anj_token_manager: **anj_token_manager.MINT_ROLE** (mgt by owner)\n**anj_token_manager.BURN_ROLE** (mgt by owner)
+presale ...> anj_token_manager: **anj_token_manager.MINT_ROLE** (mgt by owner)
+owner ...> reserve: **reserve.SAFE_EXECUTE_ROLE** (mgt by owner)
+controller ...> reserve: **reserve.ADD_PROTECTED_TOKEN_ROLE** (mgt by owner)
+market_maker ...> reserve: **reserve.TRANSFER_ROLE** (mgt by owner)
+controller ...> presale: **presale.OPEN_ROLE** (mgt by owner)\n**presale.CONTRIBUTE_ROLE** (mgt by owner)
+controller ...> market_maker: **market_maker.OPEN_ROLE** (mgt by owner)\n**market_maker.UPDATE_BENEFICIARY_ROLE** (mgt by owner)\n**market_maker.UPDATE_FEES_ROLE** (mgt by owner)\n**market_maker.ADD_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**market_maker.REMOVE_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**market_maker.UPDATE_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**market_maker.OPEN_BUY_ORDER_ROLE** (mgt by owner)\n**market_maker.OPEN_SELL_ORDER_ROLE** (mgt by owner)
+owner ...> controller: **controller.ADD_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**controller.REMOVE_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**controller.UPDATE_COLLATERAL_TOKEN_ROLE** (mgt by owner)\n**controller.OPEN_PRESALE_ROLE** (mgt by owner)
+presale ...> presale: **presale.OPEN_TRADING_ROLE** (mgt by owner)
+ANY_ENTITY ...> controller: **controller.CONTRIBUTE_ROLE** (mgt by owner)\n**controller.OPEN_BUY_ORDER_ROLE** (mgt by owner)\n**controller.OPEN_SELL_ORDER_ROLE** (mgt by owner)
+
+@enduml
