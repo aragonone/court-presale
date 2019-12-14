@@ -18,7 +18,7 @@
     "abi:extract": "truffle-extract --output abi/ --keys abi",
     "apm:prepublish": "npm run compile",
     "apm:publish:rpc:major": "aragon apm publish major --environment default --skip-confirmation true --propagate-content false",
-    "apm:publish:staging:major": "aragon apm publish major --environment hatch --use-frame",
+    "apm:publish:staging:major": "aragon apm publish major --environment staging --use-frame",
     "apm:publish:rinkeby:major": "aragon apm publish major --environment rinkeby --use-frame",
     "publish": "npm run apm:publish:rpc:major"
   },
