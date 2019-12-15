@@ -77,7 +77,7 @@ _Handle preliminary sale_
 | ------- | ----------             | ---------- | ---------------- |
 | Presale | OPEN                   | Controller | Owner            |
 | Presale | REDUCE_BENEFICIARY_PCT | Owner      | Owner            |
-| Presale | CONTRIBUTE             | Controller | Owner            |
+| Presale | CONTRIBUTE             | Any        | Owner            |
 
 
 #### MarketMaker

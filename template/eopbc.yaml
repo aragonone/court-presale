@@ -64,7 +64,7 @@ permissions:
   manager: owner
 - app: presale
   role: CONTRIBUTE_ROLE
-  grantee: controller
+  grantee: ANY_ENTITY
   manager: owner
 - app: market-maker
   role: OPEN_ROLE

@@ -226,7 +226,7 @@ contract EOPBCTemplate is BaseTemplate {
         // presale
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.presale, _fundraisingApps.presale.OPEN_ROLE(), _owner);
         _acl.createPermission(_owner, _fundraisingApps.presale, _fundraisingApps.presale.REDUCE_BENEFICIARY_PCT_ROLE(), _owner);
-        _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.presale, _fundraisingApps.presale.CONTRIBUTE_ROLE(), _owner);
+        _acl.createPermission(ANY_ENTITY, _fundraisingApps.presale, _fundraisingApps.presale.CONTRIBUTE_ROLE(), _owner);
         // market maker
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.marketMaker, _fundraisingApps.marketMaker.OPEN_ROLE(), _owner);
         _acl.createPermission(_fundraisingApps.controller, _fundraisingApps.marketMaker, _fundraisingApps.marketMaker.UPDATE_BENEFICIARY_ROLE(), _owner);
