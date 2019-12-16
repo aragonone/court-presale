@@ -19,6 +19,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     using SafeMath   for uint256;
     using SafeMath64 for uint64;
 
+    // audit(@izqui): assumes hashes to be correct, not verified
     /**
     Hardcoded constants to save gas
     bytes32 public constant OPEN_ROLE                   = keccak256("OPEN_ROLE");
@@ -31,6 +32,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
     uint256 public constant PPM = 1000000; // 0% = 0 * 10 ** 4; 1% = 1 * 10 ** 4; 100% = 100 * 10 ** 4
 
+    // audit(@izqui): consider making the error prefix BRPRESALE to identify the contract
     string private constant ERROR_CONTRACT_IS_EOA          = "PRESALE_CONTRACT_IS_EOA";
     string private constant ERROR_INVALID_BENEFICIARY      = "PRESALE_INVALID_BENEFICIARY";
     string private constant ERROR_INVALID_CONTRIBUTE_TOKEN = "PRESALE_INVALID_CONTRIBUTE_TOKEN";
@@ -53,10 +55,12 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         Closed       // presale has been closed and trading has been open
     }
 
+    // audit(@izqui): this looks organized but quite ugly IMO, also we don't do this sort of forced indentation anywhere else in our code (at least not to this extent)
     IAragonFundraisingController                  public   controller;
     IMarketMaker                                  public   marketMaker;
     TokenManager                                  public   tokenManager;
     address                                       public   reserve;
+    // audit(@izqui): consider renaming to something more explicit like premine receiver. Anyone buying tokens is technically a beneficiary
     address                                       public   beneficiary;
     ERC20                                         internal erc20ContribToken;
 
@@ -65,15 +69,18 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     uint256                                       public   mintingForBeneficiaryPct;
     uint64                                        public   openDate;
 
+    // audit(@izqui): nit, confusing that 'isClosed' will be false while the sale hasn't started yet
     bool                                          public   isClosed;
-    uint256                                       public   totalRaised;
-    uint256                                       public   totalSold;
+    uint256                                       public   totalRaised; // audit(@izqui): lawyer hat, rename to totalConverted
+    uint256                                       public   totalSold;   // audit(@izqui): lawyer hat, rename to totalMinted
 
+    // audit(@izqui): this is ugly as fuck
     event SetOpenDate          (uint64 date);
     event ReduceBeneficiatyPct (uint256 pct);
-    event Close                ();
+    event Close                (); // audit(@izqui): my eyes 🤮
     event Contribute           (address indexed contributor, uint256 value, uint256 amount);
 
+    // audit(@izqui): review typos in comments
     /***** external function *****/
 
     /**
@@ -95,7 +102,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         address                      _reserve,
         address                      _beneficiary,
         ERC20                        _erc20ContribToken,
-        uint64                       _period,
+        uint64                       _period, // audit(@izqui): 'period' has the connotation that it is something that happens multiple times (periodically). Consider renaming to 'duration'
         uint256                      _exchangeRate,
         uint256                      _mintingForBeneficiaryPct,
         uint64                       _openDate
@@ -103,6 +110,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         external
         onlyInit
     {
+        // audit(@izqui): this looks fucking terrible and makes reading the code a pain. i assume it is coming from ABlack's code, but let's make it A1 style pls
         require(isContract(_controller),                                            ERROR_CONTRACT_IS_EOA);
         require(isContract(_marketMaker),                                           ERROR_CONTRACT_IS_EOA);
         require(isContract(_tokenManager),                                          ERROR_CONTRACT_IS_EOA);
@@ -112,7 +120,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         require(_exchangeRate > 0,                                                  ERROR_INVALID_EXCHANGE_RATE);
         require(_mintingForBeneficiaryPct <= PPM, ERROR_INVALID_PCT);
 
-        initialized();
+        initialized(); // audit(@izqui): we usually do this at the very end of the function
 
         controller = _controller;
         marketMaker = _marketMaker;
@@ -125,6 +133,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
         _setPeriod(_period);
 
+        // audit(@izqui): i don't like the idea of openDate being 0, is there any reason why we wouldn't save it as MAX_UINT64 (would remove extra logic in 'state()')
         if (_openDate != 0) {
             _setOpenDate(_openDate);
         }
@@ -174,6 +183,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         require(state() == State.Funding,                                           ERROR_INVALID_STATE);
         require(msg.value == 0,                                                     ERROR_INVALID_CONTRIBUTE_VALUE);
         require(_value > 0,                                                         ERROR_INVALID_CONTRIBUTE_VALUE);
+        // audit(@izqui): no need for these two checks, let the token.transferFrom crash :)
         require(erc20ContribToken.balanceOf(_contributor) >= _value,                ERROR_INSUFFICIENT_BALANCE);
         require(erc20ContribToken.allowance(_contributor, address(this)) >= _value, ERROR_INSUFFICIENT_ALLOWANCE);
 
@@ -181,7 +191,9 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         _transfer(erc20ContribToken, _contributor, address(this), _value);
 
         // (mint ✨) ~~~> project tokens ~~~> (contributor)
-        uint256 tokensToSell = contributionToTokens(_value);
+        uint256 tokensToSell = contributionToTokens(_value); // audit(@izqui): lawyer hat, rename to tokensToMint
+        // audit(@izqui): why are we modifying these two state variables on every buy when we could calculate them at the end?
+        // specially since 'totalSold = contributionToTokens(totalRaised)' should always hold until we mint the premine
         totalRaised = totalRaised.add(_value);
         totalSold = totalSold.add(tokensToSell);
         tokenManager.mint(_contributor, tokensToSell);
@@ -197,7 +209,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     }
 
     /**
-     * @notice Close presale and open trading
+     * @notice Close presale and open trading // audit(@izqui): lawyer hat, rename to live conversions
     */
     function close() external nonReentrant isInitialized {
         require(state() == State.Finished, ERROR_INVALID_STATE);
@@ -207,12 +219,15 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         // mint new tokens for beneficiary
         uint256 tokensToMint;
         if (mintingForBeneficiaryPct > 0) {
+            // audit(@izqui): math is wrong here. Beneficiary should have 'mintingForBeneficiaryPct' tokens of the initial supply, which is not calculated this way.
+            // example: 100 ANJ is minted, 20% of 100 is 20. Beneficiary owns 20/120 = 16.7%
             tokensToMint = totalSold.mul(mintingForBeneficiaryPct) / PPM;
             tokenManager.mint(beneficiary, tokensToMint);
         }
 
         // (presale) ~~~> contribution tokens ~~~> (reserve)
         (,,, uint32 reserveRatio,) = marketMaker.getCollateralToken(tokenManager.token());
+        // audit(@izqui): not checking this math. assuming it is correct
         uint256 tokensForReserve = (totalRaised.mul(PPM + mintingForBeneficiaryPct) / PPM).mul(reserveRatio) / PPM;
         _transfer(erc20ContribToken, address(this), reserve, tokensForReserve);
 
@@ -258,6 +273,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
             return State.Finished;
         }
 
+        // audit(@izqui): nit, since most calls to this contract will have while funding, I would reshuffle the logic so returning Funding is as short as possible
         return State.Funding;
     }
 
@@ -267,6 +283,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         if (openDate == 0) {
             return 0;
         } else {
+            // audit(@izqui): this would revert if the logic in 'state' is moved. I don't think we should have code that will start failing depending on another function's code
             return getTimestamp64().sub(openDate);
         }
     }
@@ -286,6 +303,8 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         period = _period;
     }
 
+    // audit(@izqui): i really don't like this function. there's absolutely no need to have these two very very different calls in the same function depending on who the from is.
+    // i would split into separate 'deposit' and 'transfer' functions
     function _transfer(ERC20 _token, address _from, address _to, uint256 _amount) internal {
         if (_from == address(this)) {
             require(_token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER_REVERTED);
