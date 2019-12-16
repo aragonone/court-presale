@@ -110,7 +110,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         require(_beneficiary != address(0),                                         ERROR_INVALID_BENEFICIARY);
         require(isContract(_erc20ContribToken),                                     ERROR_INVALID_CONTRIBUTE_TOKEN);
         require(_exchangeRate > 0,                                                  ERROR_INVALID_EXCHANGE_RATE);
-        require(_mintingForBeneficiaryPct <= PPM, ERROR_INVALID_PCT);
+        require(_mintingForBeneficiaryPct < PPM, ERROR_INVALID_PCT);
 
         initialized();
 
@@ -207,13 +207,14 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         // mint new tokens for beneficiary
         uint256 tokensToMint;
         if (mintingForBeneficiaryPct > 0) {
-            tokensToMint = totalSold.mul(mintingForBeneficiaryPct) / PPM;
+            // No need for SafeMath, already checked mintingForBeneficiaryPct < PPM
+            tokensToMint = totalSold.mul(mintingForBeneficiaryPct) / (PPM - mintingForBeneficiaryPct);
             tokenManager.mint(beneficiary, tokensToMint);
         }
 
         // (presale) ~~~> contribution tokens ~~~> (reserve)
         (,,, uint32 reserveRatio,) = marketMaker.getCollateralToken(tokenManager.token());
-        uint256 tokensForReserve = (totalRaised.mul(PPM + mintingForBeneficiaryPct) / PPM).mul(reserveRatio) / PPM;
+        uint256 tokensForReserve = (totalRaised.mul(PPM) / (PPM - mintingForBeneficiaryPct)).mul(reserveRatio) / PPM;
         _transfer(erc20ContribToken, address(this), reserve, tokensForReserve);
 
         // (presale) ~~~> contribution tokens ~~~> (beneficiary)

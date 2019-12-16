@@ -58,7 +58,7 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
         expect(totalRaised).to.equal(contribution)
 
         // reserve
-        const tokensForReserve = web3.toBigNumber(totalRaised).mul(PPM + mintingForBeneficiaryPct).div(PPM).mul(RESERVE_RATIOS[0]).div(PPM)
+        const tokensForReserve = web3.toBigNumber(totalRaised).mul(PPM).div(PPM - mintingForBeneficiaryPct).mul(RESERVE_RATIOS[0]).div(PPM)
         const reserve = await this.presale.reserve()
         expect((await this.contributionToken.balanceOf(reserve)).toString()).to.equal(tokensForReserve.toString())
 
@@ -83,7 +83,7 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
 
         // beneficiary
         const balanceOfBeneficiary = await this.projectToken.balanceOf(appManager)
-        const expectedBeneficiary = web3.toBigNumber(contributorMintedTokens).mul(mintingForBeneficiaryPct).div(PPM)
+        const expectedBeneficiary = web3.toBigNumber(contributorMintedTokens).mul(mintingForBeneficiaryPct).div(PPM - mintingForBeneficiaryPct)
         expect(balanceOfBeneficiary.toString()).to.equal(expectedBeneficiary.toString())
       })
 
