@@ -11,6 +11,7 @@ const ERC20 = artifacts.require('@aragon/core/contracts/lib/token/ERC20')
 const TokenManager = artifacts.require('TokenManager.sol')
 const Vault = artifacts.require('Vault.sol')
 const FundraisingController = artifacts.require('AragonFundraisingControllerMock.sol')
+const MarketMaker = artifacts.require('MarketMakerMock.sol')
 const Presale = artifacts.require('BalanceRedirectPresaleMock.sol')
 
 const {
@@ -75,6 +76,11 @@ const deploy = {
     await test.fundraising.initialize()
   },
 
+  /* MARKET MAKER */
+  deployMarketMaker: async (test) => {
+    test.marketMaker = await MarketMaker.new()
+  },
+
   /* VAULT */
   deployVault: async (test, appManager) => {
     const appBase = await Vault.new()
@@ -127,13 +133,13 @@ const deploy = {
   initializePresale: async (test, params) => {
     const paramsArr = [
       params.fundraising,
+      params.marketMaker,
       params.tokenManager,
       params.reserve,
       params.beneficiary,
       params.contributionToken,
       params.presalePeriod,
       params.presaleExchangeRate,
-      params.futureReserveRatio,
       params.mintingForBeneficiaryPct,
       params.startDate,
     ]
@@ -142,13 +148,13 @@ const deploy = {
   defaultDeployParams: (test, beneficiary) => {
     return {
       fundraising: test.fundraising.address,
+      marketMaker: test.marketMaker.address,
       tokenManager: test.tokenManager.address,
       reserve: test.reserve.address,
       beneficiary,
       contributionToken: test.contributionToken.address,
       presalePeriod: PRESALE_PERIOD,
       presaleExchangeRate: PRESALE_EXCHANGE_RATE,
-      futureReserveRatio: RESERVE_RATIOS[0],
       mintingForBeneficiaryPct: 0,
       startDate: 0,
     }
@@ -176,6 +182,7 @@ const deploy = {
     await deploy.deployVault(test, appManager)
     await deploy.deployReserve(test, appManager)
     await deploy.deployFundraising(test, appManager)
+    await deploy.deployMarketMaker(test)
     await deploy.deployPresale(test, appManager)
 
     await deploy.setVaultPermissions(test, appManager)

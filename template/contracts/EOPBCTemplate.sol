@@ -9,6 +9,7 @@ import {BatchedBancorMarketMaker as MarketMaker} from "@ablack/fundraising-batch
 import "@ablack/fundraising-shared-interfaces/contracts/IPresale.sol";
 import "@aragon/court-presale/contracts/BalanceRedirectPresale.sol";
 import {TapDisabled as Tap} from "./TapDisabled.sol";
+import "@aragon/court-presale/contracts/lib/IMarketMaker.sol";
 
 
 /**
@@ -142,13 +143,13 @@ contract EOPBCTemplate is BaseTemplate {
     {
         _fundraisingApps.presale.initialize(
             _fundraisingApps.controller,
+            IMarketMaker(_fundraisingApps.marketMaker),
             _fundraisingApps.bondedTokenManager,
             _fundraisingApps.reserve,
             _fundraisingParams.owner,
             _fundraisingParams.collateralToken,
             _fundraisingParams.period,
             _fundraisingParams.exchangeRate,
-            _fundraisingParams.reserveRatio,
             _fundraisingParams.mintingForBeneficiaryPct,
             _fundraisingParams.openDate
         );

@@ -47,10 +47,6 @@ contract('Balance Redirect Presale, setup', ([anyone, appManager, someEOA]) => {
         expect((await this.presale.openDate()).toNumber()).to.equal(startDate)
       })
 
-      it('Future reserve ratio is set', async () => {
-        expect((await this.presale.futureReserveRatio()).toNumber()).to.equal(Number(RESERVE_RATIOS[0]))
-      })
-
       it('Presale period is set', async () => {
         expect((await this.presale.period()).toNumber()).to.equal(PRESALE_PERIOD)
       })
@@ -202,11 +198,6 @@ contract('Balance Redirect Presale, setup', ([anyone, appManager, someEOA]) => {
     it('Reverts when setting invalid dates', async () => {
       await assertRevert(initializePresale(this, { ...defaultParams, startDate: Math.floor(new Date().getTime() / 1000) - 1 }), ERROR_INVALID_OPEN_DATE)
       await assertRevert(initializePresale(this, { ...defaultParams, presalePeriod: 0 }), ERROR_TIME_PERIOD_ZERO)
-    })
-
-    it('Reverts when setting an invalid future reserve ratio', async () => {
-      await assertRevert(initializePresale(this, { ...defaultParams, futureReserveRatio: 0 }), 'PRESALE_INVALID_PCT')
-      await assertRevert(initializePresale(this, { ...defaultParams, futureReserveRatio: 1e6 + 1 }), 'PRESALE_INVALID_PCT')
     })
 
     it('Reverts when setting an invalid beneficiary address', async () => {

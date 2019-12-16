@@ -11,6 +11,8 @@ import "@ablack/fundraising-shared-interfaces/contracts/IAragonFundraisingContro
 
 import "@ablack/fundraising-shared-interfaces/contracts/IPresale.sol";
 
+import "./lib/IMarketMaker.sol";
+
 
 contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     using SafeERC20  for ERC20;
@@ -52,6 +54,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     }
 
     IAragonFundraisingController                  public   controller;
+    IMarketMaker                                  public   marketMaker;
     TokenManager                                  public   tokenManager;
     address                                       public   reserve;
     address                                       public   beneficiary;
@@ -59,7 +62,6 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
 
     uint64                                        public   period;
     uint256                                       public   exchangeRate;
-    uint256                                       public   futureReserveRatio;
     uint256                                       public   mintingForBeneficiaryPct;
     uint64                                        public   openDate;
 
@@ -77,24 +79,24 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
     /**
      * @notice Initialize presale
      * @param _controller               The address of the controller contract
+     * @param _marketMaker              The address of the market maker contract
      * @param _tokenManager             The address of the [bonded] token manager contract
      * @param _reserve                  The address of the reserve [pool] contract
      * @param _beneficiary              The address of the beneficiary [to whom a percentage of the raised funds is be to be sent]
      * @param _erc20ContribToken        The address of the token to be used to contribute
      * @param _period                   The period within which to accept contribution for that presale
      * @param _exchangeRate             The exchangeRate [= 1/price] at which [bonded] tokens are to be purchased for that presale [in PPM]
-     * @param _futureReserveRatio       The reserve ratio of the bonding curve that will be opened after the presale is closed
      * @param _openDate                 The date upon which that presale is to be open [ignored if 0]
     */
     function initialize(
         IAragonFundraisingController _controller,
+        IMarketMaker                 _marketMaker,
         TokenManager                 _tokenManager,
         address                      _reserve,
         address                      _beneficiary,
         ERC20                        _erc20ContribToken,
         uint64                       _period,
         uint256                      _exchangeRate,
-        uint256                      _futureReserveRatio,
         uint256                      _mintingForBeneficiaryPct,
         uint64                       _openDate
     )
@@ -102,23 +104,23 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         onlyInit
     {
         require(isContract(_controller),                                            ERROR_CONTRACT_IS_EOA);
+        require(isContract(_marketMaker),                                           ERROR_CONTRACT_IS_EOA);
         require(isContract(_tokenManager),                                          ERROR_CONTRACT_IS_EOA);
         require(isContract(_reserve),                                               ERROR_CONTRACT_IS_EOA);
         require(_beneficiary != address(0),                                         ERROR_INVALID_BENEFICIARY);
         require(isContract(_erc20ContribToken),                                     ERROR_INVALID_CONTRIBUTE_TOKEN);
         require(_exchangeRate > 0,                                                  ERROR_INVALID_EXCHANGE_RATE);
-        require(_futureReserveRatio > 0 && _futureReserveRatio <= PPM, ERROR_INVALID_PCT);
         require(_mintingForBeneficiaryPct <= PPM, ERROR_INVALID_PCT);
 
         initialized();
 
         controller = _controller;
+        marketMaker = _marketMaker;
         tokenManager = _tokenManager;
         reserve = _reserve;
         beneficiary = _beneficiary;
         erc20ContribToken = _erc20ContribToken;
         exchangeRate = _exchangeRate;
-        futureReserveRatio = _futureReserveRatio;
         mintingForBeneficiaryPct = _mintingForBeneficiaryPct;
 
         _setPeriod(_period);
@@ -210,7 +212,8 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         }
 
         // (presale) ~~~> contribution tokens ~~~> (reserve)
-        uint256 tokensForReserve = (totalRaised.mul(PPM + mintingForBeneficiaryPct) / PPM).mul(futureReserveRatio) / PPM;
+        (,,, uint32 reserveRatio,) = marketMaker.getCollateralToken(tokenManager.token());
+        uint256 tokensForReserve = (totalRaised.mul(PPM + mintingForBeneficiaryPct) / PPM).mul(reserveRatio) / PPM;
         _transfer(erc20ContribToken, address(this), reserve, tokensForReserve);
 
         // (presale) ~~~> contribution tokens ~~~> (beneficiary)
