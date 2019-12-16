@@ -1,6 +1,6 @@
 {
   "name": "@aragon/templates-externally-owned-presale-bonding-curve",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "author": "Aragon Assocation <legal@aragon.org>",
   "contributors": [
     "ßingen <bingen@aragon.one>"
@@ -54,7 +54,7 @@
     "@aragon/apps-token-manager": "^2.1.0",
     "@aragon/apps-vault": "^4.1.0",
     "@aragon/apps-voting": "^2.1.0",
-    "@aragon/court-presale": "^0.1.0",
+    "@aragon/court-presale": "^1.0.0",
     "@aragon/id": "2.0.3",
     "@aragon/os": "4.2.1",
     "@aragon/templates-shared": "^1.0.0"
