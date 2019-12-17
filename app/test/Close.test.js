@@ -14,7 +14,14 @@ const BUYER_BALANCE = 2 * CONTRIBUTION
 const EXCHANGE_RATE = 20000000 // 20, in PPM
 
 contract('Balance Redirect Presale, close() functionality', ([anyone, appManager, buyer1]) => {
-  const itAllowsTheSaleToBeClosed = (startDate, contribution, mintingForBeneficiaryPct) => {
+  const itAllowsTheSaleToBeClosed = (
+    startDate,
+    contribution,
+    mintingForBeneficiaryPct,
+    tokensForReserve,
+    tokensForBeneficiary,
+    expectedBondedBeneficiary
+  ) => {
     before(async () => {
       await prepareDefaultSetup(this, appManager)
       await initializePresale(this, { ...defaultDeployParams(this, appManager), startDate, presaleExchangeRate: EXCHANGE_RATE, mintingForBeneficiaryPct })
@@ -58,12 +65,10 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
         expect(totalRaised).to.equal(contribution)
 
         // reserve
-        const tokensForReserve = web3.toBigNumber(totalRaised).mul(PPM).div(PPM - mintingForBeneficiaryPct).mul(RESERVE_RATIOS[0]).div(PPM)
         const reserve = await this.presale.reserve()
         expect((await this.contributionToken.balanceOf(reserve)).toString()).to.equal(tokensForReserve.toString())
 
         // beneficiary
-        const tokensForBeneficiary = web3.toBigNumber(totalRaised).sub(tokensForReserve)
         expect((await this.contributionToken.balanceOf(appManager)).toString()).to.equal(tokensForBeneficiary.toString())
       })
 
@@ -83,8 +88,8 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
 
         // beneficiary
         const balanceOfBeneficiary = await this.projectToken.balanceOf(appManager)
-        const expectedBeneficiary = web3.toBigNumber(contributorMintedTokens).mul(mintingForBeneficiaryPct).div(PPM - mintingForBeneficiaryPct)
-        expect(balanceOfBeneficiary.toString()).to.equal(expectedBeneficiary.toString())
+        const expectedBondedBeneficiary = web3.toBigNumber(contributorMintedTokens).mul(mintingForBeneficiaryPct).div(PPM - mintingForBeneficiaryPct)
+        expect(balanceOfBeneficiary.toString()).to.equal(expectedBondedBeneficiary.toString())
       })
 
       it('Continuous fundraising campaign is started', async () => {
@@ -120,11 +125,17 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
 
   const closeWithStartDateAndContribution = (startDate, contribution) => {
     describe('When there is some pre-minting', () => {
-      itAllowsTheSaleToBeClosed(startDate, contribution, 0.2 * PPM)
+      const tokensForReserve = contribution == 0 ? 0 : web3.toBigNumber(125e15)
+      const tokensForBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(875e15)
+      const expectedBondedBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(5e18)
+      itAllowsTheSaleToBeClosed(startDate, contribution, 0.2 * PPM, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
     })
 
     describe('When there is no pre-minting', () => {
-      itAllowsTheSaleToBeClosed(startDate, contribution, 0)
+      const tokensForReserve = contribution == 0 ? 0 : web3.toBigNumber(1e17)
+      const tokensForBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(9e17)
+      const expectedBondedBeneficiary = 0
+      itAllowsTheSaleToBeClosed(startDate, contribution, 0, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
     })
   }
   const closeSaleWithStartDate = startDate => {
