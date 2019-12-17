@@ -1,6 +1,6 @@
 {
   "name": "@aragon/templates-externally-owned-presale-bonding-curve",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Aragon Assocation <legal@aragon.org>",
   "contributors": [
     "ßingen <bingen@aragon.one>"
@@ -31,8 +31,7 @@
     "publish:ropsten": "aragon apm publish major $(npm run deploy:ropsten | tail -n 1) --environment ropsten",
     "publish:mainnet": "aragon apm publish major $(npm run deploy:mainnet | tail -n 1) --environment mainnet",
     "deploy:dao:rpc": "truffle exec scripts/deploy_dao.js --network rpc $(aragon apm versions | tail -n 1 | cut -d ' ' -f 3)",
-    "deploy:dao:rinkeby": "truffle exec scripts/deploy_dao.js --network frame $(aragon apm versions --env rinkeby | tail -n 1 | cut -d ' ' -f 3)",
-    "publish": "npm run publish:rpc"
+    "deploy:dao:rinkeby": "truffle exec scripts/deploy_dao.js --network frame $(aragon apm versions --env rinkeby | tail -n 1 | cut -d ' ' -f 3)"
   },
   "files": [
     "/abi",
@@ -54,7 +53,7 @@
     "@aragon/apps-token-manager": "^2.1.0",
     "@aragon/apps-vault": "^4.1.0",
     "@aragon/apps-voting": "^2.1.0",
-    "@aragon/court-presale": "^1.0.0",
+    "@aragon/court-presale": "1.1.0",
     "@aragon/id": "2.0.3",
     "@aragon/os": "4.2.1",
     "@aragon/templates-shared": "^1.0.0"
