@@ -114,7 +114,7 @@ permissions:
   role: OPEN_PRESALE_ROLE
   grantee: owner
   manager: owner
-- app: presale
+- app: controller
   role: OPEN_TRADING_ROLE
   grantee: presale
   manager: owner
