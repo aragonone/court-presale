@@ -30,7 +30,7 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
       await this.contributionToken.approve(this.presale.address, BUYER_BALANCE, { from: buyer1 })
 
       // set market maker reserve ratio
-      await this.marketMaker.setReserveRatio(RESERVE_RATIOS[0])
+      await this.marketMaker.setReserveRatio(this.contributionToken.address, RESERVE_RATIOS[0])
 
       if (startDate == 0) {
         startDate = now()

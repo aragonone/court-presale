@@ -2,13 +2,13 @@ pragma solidity ^0.4.24;
 
 
 contract MarketMakerMock {
-    uint32 reserveRatio;
+    mapping(address => uint32) reserveRatios;
 
-    function setReserveRatio(uint32 _reserveRatio) external {
-        reserveRatio = _reserveRatio;
+    function setReserveRatio(address _token, uint32 _reserveRatio) external {
+        reserveRatios[_token] = _reserveRatio;
     }
 
-    function getCollateralToken(address) public view returns (bool, uint256, uint256, uint32, uint256) {
-        return (true, 0, 0, reserveRatio, 0);
+    function getCollateralToken(address _token) public view returns (bool, uint256, uint256, uint32, uint256) {
+        return (true, 0, 0, reserveRatios[_token], 0);
     }
 }
