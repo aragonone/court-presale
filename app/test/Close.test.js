@@ -2,12 +2,15 @@ const {
   PPM,
   PRESALE_PERIOD,
   RESERVE_RATIOS,
+  ZERO_ADDRESS,
 } = require('@ablack/fundraising-shared-test-helpers/constants')
 const { PRESALE_STATE, prepareDefaultSetup, defaultDeployParams, initializePresale } = require('./common/deploy')
 const { getEvent, now } = require('@ablack/fundraising-presale/test/common/utils')
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 
 const assertExternalEvent = require('@ablack/fundraising-shared-test-helpers/assertExternalEvent')
+
+const MiniMeToken = artifacts.require('@aragon/apps-shared-minime/contracts/MiniMeToken')
 
 const CONTRIBUTION = 1e18
 const BUYER_BALANCE = 2 * CONTRIBUTION
@@ -22,37 +25,38 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
     tokensForBeneficiary,
     expectedBondedBeneficiary
   ) => {
-    before(async () => {
-      await prepareDefaultSetup(this, appManager)
-      await initializePresale(this, { ...defaultDeployParams(this, appManager), startDate, presaleExchangeRate: EXCHANGE_RATE, mintingForBeneficiaryPct })
-
-      await this.contributionToken.generateTokens(buyer1, BUYER_BALANCE)
-      await this.contributionToken.approve(this.presale.address, BUYER_BALANCE, { from: buyer1 })
-
-      // set market maker reserve ratio
-      await this.marketMaker.setReserveRatio(this.contributionToken.address, RESERVE_RATIOS[0])
-
-      if (startDate == 0) {
-        startDate = now()
-        await this.presale.open({ from: appManager })
-      }
-      await this.presale.mockSetTimestamp(startDate + 1)
-
-      // Make a single purchase
-      if (contribution > 0) {
-        await this.presale.contribute(buyer1, contribution)
-      }
-
-      // finish period
-      await this.presale.mockSetTimestamp(startDate + PRESALE_PERIOD)
-    })
-
     describe('When the sale is closed', () => {
       let closeReceipt
 
-      before(async () => {
+      beforeEach('Setup and close presale', async () => {
+        await prepareDefaultSetup(this, appManager)
+        await initializePresale(this, { ...defaultDeployParams(this, appManager), startDate, presaleExchangeRate: EXCHANGE_RATE, mintingForBeneficiaryPct })
+
+        await this.contributionToken.generateTokens(buyer1, BUYER_BALANCE)
+        await this.contributionToken.approve(this.presale.address, BUYER_BALANCE, { from: buyer1 })
+
+        // set market maker reserve ratio
+        await this.marketMaker.setReserveRatio(this.contributionToken.address, RESERVE_RATIOS[0])
+
+        let currentDate = startDate
+        if (startDate == 0) {
+          currentDate = now()
+          const r = await this.presale.open({ from: appManager })
+        }
+        await this.presale.mockSetTimestamp(currentDate + 1)
+
+        // Make a single purchase
+        if (contribution > 0) {
+          await this.presale.contribute(buyer1, contribution)
+        }
+
+        // finish period
+        await this.presale.mockSetTimestamp(currentDate + PRESALE_PERIOD)
+
+        // close presale
         closeReceipt = await this.presale.close()
       })
+
 
       it('Sale state is Closed', async () => {
         expect((await this.presale.state()).toNumber()).to.equal(PRESALE_STATE.CLOSED)
@@ -123,12 +127,60 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
     })
   }
 
+  const itClosesTheSaleWithWrongToken = (
+    startDate,
+    contribution,
+    mintingForBeneficiaryPct,
+    tokensForReserve,
+    tokensForBeneficiary,
+    expectedBondedBeneficiary
+  ) => {
+    describe('When the sale is closed but Market Maker collateral is different', () => {
+      let closeReceipt
+
+      beforeEach('Setup and close presale', async () => {
+        await prepareDefaultSetup(this, appManager)
+        await initializePresale(this, { ...defaultDeployParams(this, appManager), startDate, presaleExchangeRate: EXCHANGE_RATE, mintingForBeneficiaryPct })
+
+        await this.contributionToken.generateTokens(buyer1, BUYER_BALANCE)
+        await this.contributionToken.approve(this.presale.address, BUYER_BALANCE, { from: buyer1 })
+
+        // set market maker reserve ratio, with wrong token
+        const mmToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'Market Maker Token', 18, 'MMT', true)
+        await this.marketMaker.setReserveRatio(mmToken.address, RESERVE_RATIOS[0])
+
+        if (startDate == 0) {
+          startDate = now()
+          await this.presale.open({ from: appManager })
+        }
+        await this.presale.mockSetTimestamp(startDate + 1)
+
+        // Make a single purchase
+        await this.presale.contribute(buyer1, contribution)
+
+        // finish period
+        await this.presale.mockSetTimestamp(startDate + PRESALE_PERIOD)
+
+        // close presale
+        closeReceipt = await this.presale.close()
+      })
+
+      it('Raised funds are NOT transferred to the fundraising reserve', async () => {
+        const reserve = await this.presale.reserve()
+        expect((await this.contributionToken.balanceOf(reserve)).toString()).to.equal('0')
+      })
+    })
+  }
+
   const closeWithStartDateAndContribution = (startDate, contribution) => {
     describe('When there is some pre-minting', () => {
       const tokensForReserve = contribution == 0 ? 0 : web3.toBigNumber(125e15)
       const tokensForBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(875e15)
       const expectedBondedBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(5e18)
       itAllowsTheSaleToBeClosed(startDate, contribution, 0.2 * PPM, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
+      if (contribution > 0) {
+        itClosesTheSaleWithWrongToken(startDate, contribution, 0.2 * PPM, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
+      }
     })
 
     describe('When there is no pre-minting', () => {
@@ -136,8 +188,12 @@ contract('Balance Redirect Presale, close() functionality', ([anyone, appManager
       const tokensForBeneficiary = contribution == 0 ? 0 : web3.toBigNumber(9e17)
       const expectedBondedBeneficiary = 0
       itAllowsTheSaleToBeClosed(startDate, contribution, 0, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
+      if (contribution > 0) {
+        itClosesTheSaleWithWrongToken(startDate, contribution, 0, tokensForReserve, tokensForBeneficiary, expectedBondedBeneficiary)
+      }
     })
   }
+
   const closeSaleWithStartDate = startDate => {
     describe('When some purchases have been made', () => {
       closeWithStartDateAndContribution(startDate, CONTRIBUTION)
