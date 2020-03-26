@@ -213,7 +213,7 @@ contract BalanceRedirectPresale is IsContract, AragonApp, IPresale {
         }
 
         // (presale) ~~~> contribution tokens ~~~> (reserve)
-        (,,, uint32 reserveRatio,) = marketMaker.getCollateralToken(tokenManager.token());
+        (,,, uint32 reserveRatio,) = marketMaker.getCollateralToken(address(erc20ContribToken));
         uint256 tokensForReserve = (totalRaised.mul(PPM) / (PPM - mintingForBeneficiaryPct)).mul(reserveRatio) / PPM;
         _transfer(erc20ContribToken, address(this), reserve, tokensForReserve);
 
