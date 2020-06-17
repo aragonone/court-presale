@@ -1,6 +1,6 @@
 {
   "name": "@aragon/court-presale",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Aragon Association",
   "contributors": [
     "ßingen <bingen@aragon.one>"
@@ -50,6 +50,7 @@
     "solidity-coverage": "0.6.2",
     "solium": "^1.2.3",
     "truffle": "4.1.14",
-    "truffle-extract": "^1.2.1"
+    "truffle-extract": "^1.2.1",
+    "truffle-flattener": "^1.4.2"
   }
 }
